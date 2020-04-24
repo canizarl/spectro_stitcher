@@ -64,7 +64,7 @@ class fnames:
     freqname - name of frequency dataset in the CDF file
 
     """
-    def __init__(fnames,band,year,month,day,dipoles):
+    def __init__(self,band,year,month,day,dipoles):
         if dipoles == "V1V2":
             ch = "0"
         elif dipoles == "V3V4":
@@ -74,16 +74,16 @@ class fnames:
 
 
         cwd = os.getcwd()
-        fnames.band = band
-        fnames.year = year
-        fnames.month = month
-        fnames.day = day
-        fnames.dipoles = dipoles
-        fnames.fname = "psp_fld_l2_rfs_"+fnames.band+"_"+fnames.year+fnames.month+fnames.day+"_v01.cdf"
-        fnames.path_data = cwd+"/../../DATA/"+fnames.year+"/"+fnames.month+"/"+fnames.band+"/"+fnames.fname
-        fnames.dataname = "psp_fld_l2_rfs_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
-        fnames.epochname = "epoch_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
-        fnames.freqname = "frequency_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
+        self.band = band
+        self.year = year
+        self.month = month
+        self.day = day
+        self.dipoles = dipoles
+        self.fname = "psp_fld_l2_rfs_"+fnames.band+"_"+fnames.year+fnames.month+fnames.day+"_v01.cdf"
+        self.path_data = cwd+"/../../DATA/"+fnames.year+"/"+fnames.month+"/"+fnames.band+"/"+fnames.fname
+        self.dataname = "psp_fld_l2_rfs_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
+        self.epochname = "epoch_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
+        self.freqname = "frequency_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
 
 
 
@@ -95,10 +95,10 @@ class data_spectro:
     epoch: 1D array of the time datapoints
     freq: 1D array of the frequency channels used for each data point. 
     """
-    def __init__(data_spectro, data, epoch, freq):
-        data_spectro.data=data
-        data_spectro.epoch=epoch
-        data_spectro.freq=freq
+    def __init__(self, data, epoch, freq):
+        self.data=data
+        self.epoch=epoch
+        self.freq=freq
 
 
 

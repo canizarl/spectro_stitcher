@@ -10,7 +10,7 @@
     
     Planned:
         Waves (Solar Orbiter)
-        
+
 
 
 
@@ -102,6 +102,9 @@ def load_PSP_data(date,band):
 
 
 def freqlabelsmaker(freq):
+    """
+    No longer used
+    """
     # Y axis -----------------------------------------------
     logfreq = np.zeros(len(freq))
     for i in range(0,len(freq)):
