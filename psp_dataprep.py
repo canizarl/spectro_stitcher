@@ -79,11 +79,11 @@ class fnames:
         self.month = month
         self.day = day
         self.dipoles = dipoles
-        self.fname = "psp_fld_l2_rfs_"+fnames.band+"_"+fnames.year+fnames.month+fnames.day+"_v01.cdf"
-        self.path_data = cwd+"/../../DATA/"+fnames.year+"/"+fnames.month+"/"+fnames.band+"/"+fnames.fname
-        self.dataname = "psp_fld_l2_rfs_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
-        self.epochname = "epoch_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
-        self.freqname = "frequency_"+fnames.band+"_auto_averages_ch"+ch+"_"+fnames.dipoles
+        self.fname = "psp_fld_l2_rfs_"+self.band+"_"+self.year+self.month+self.day+"_v01.cdf"
+        self.path_data = cwd+"/../../DATA/"+self.year+"/"+self.month+"/"+self.band+"/"+self.fname
+        self.dataname = "psp_fld_l2_rfs_"+self.band+"_auto_averages_ch"+ch+"_"+self.dipoles
+        self.epochname = "epoch_"+self.band+"_auto_averages_ch"+ch+"_"+self.dipoles
+        self.freqname = "frequency_"+self.band+"_auto_averages_ch"+ch+"_"+self.dipoles
 
 
 
