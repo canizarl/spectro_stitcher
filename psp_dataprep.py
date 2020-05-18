@@ -1,32 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
- * \file psp_dataprep.py
- * \brief 
-    Uses cdfopenV3.py to extract radio data from PSP
-   	Stiches all the data into one big data file
-    Adds the two dipoles to get Stokes I param
-    Background subtracts the data
-    Saves three .txt files. one for each: data, freq, time 
-    default data extracted located at cwd/../../ExtractedData/YEAR/MONTH/
+# """
+#  * \file psp_dataprep.py
+#  * \brief 
+#     Uses cdfopenV3.py to extract radio data from PSP
+#    	Stiches all the data into one big data file
+#     Adds the two dipoles to get Stokes I param
+#     Background subtracts the data
+#     Saves three .txt files. one for each: data, freq, time 
+#     default data extracted located at cwd/../../ExtractedData/YEAR/MONTH/
     
     
-    NOTES:  User may manually choose the day to be extracted or 
-            give the program a range of days and the software
-            will extract all the data between those days.
-            For more than one day extraction use  day = None
+#     NOTES:  User may manually choose the day to be extracted or 
+#             give the program a range of days and the software
+#             will extract all the data between those days.
+#             For more than one day extraction use  day = None
             
-            If a day is missing or the data is faulty, it 
-            must be flagged. 
+#             If a day is missing or the data is faulty, it 
+#             must be flagged. 
             
             
     
- * \author L. A. Canizares
- * \version 2.0
- * \date 2019-11-13
-
-
-"""
+#  * \author L. A. Canizares
+#  * \version 2.0
+#  * \date 2019-11-13
+# """
 
 
 
@@ -117,6 +115,7 @@ def data_from_CDF(date, myfile):
     """
 
     cwd = os.getcwd()
+    print(cwd)
     cdf = pycdf.CDF(myfile.path_data)
     # print(cdf)
 
