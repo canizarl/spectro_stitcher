@@ -420,7 +420,6 @@ if __name__=='__main__':
     axarr[displays['goes']].axvline(x=t0, color='r', linestyle='--')
     axarr[displays['goes']].axvline(x=t1, color='r', linestyle='--')
     axarr[displays['goes']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
-
     # axarr[displays['goes']].set_title('GOES Xray Flux')
 
 
@@ -534,24 +533,6 @@ if __name__=='__main__':
         fontweight = 'bold',
         transform=axarr[displays['psp']].transAxes)
     # axarr[displays['psp']].axis([start_time_psp, end_time_psp, end_freq_psp,start_freq_psp])
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
