@@ -26,7 +26,7 @@ def backsub(data, percentile=1.0):
     # Expects (row, column)
 
     print('Performing background subtraction.')
-    data = np.log10(data)
+    # data = np.log10(data)
     data[np.where(np.isinf(data)==True)] = 0.0
     data_std = np.std(data, axis=0)
     data_std = data_std[np.nonzero(data_std)]
