@@ -33,7 +33,7 @@ from psp_dataprep import data_spectro
 import os
 import plot_beam_spectro as pbs
 from matplotlib import dates
-import matplotlib.gridspec as gridspec
+import matplotlib.gridspec as gs
 import matplotlib.pyplot as plt
 import math
 
@@ -387,7 +387,7 @@ if __name__=='__main__':
 
 
     """ ----------------------------------------------- """
-                        ## PLOT
+                        ## PLOTS
     """ ----------------------------------------------- """
 
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
@@ -397,17 +397,25 @@ if __name__=='__main__':
     displays = {'psp':0, 'lofar':1,'goes':2} 
 
 
-    # f = plt.figure(figsize=(10,10), constrained_layout=True) 
-    # gs = f.add_gridspec(5,5)
-
     f, axarr = plt.subplots(len(displays),1,gridspec_kw={'height_ratios': [1, 0.5, 0.2]},figsize=(15,10)) 
     f.subplots_adjust(left=0.15, bottom=0.13, right=0.90, top=0.95, wspace=0.35, hspace=0.26)
+
+
+    # object 1 for goes alone
+    gs1 = gs.GridSpec(nrows = 3, ncols = 1)
+    gs1.update(left=0.05, right=0.9,top = 0.2 , bottom = 0.05,  hspace=0.0)
+
+    # object 2 for psp and lofar 
+    gs2 = gs.GridSpec(nrows = 3, ncols = 1)
+    gs2.update(left=0.05, right=0.9,top = 0.95 , bottom = 0.3,  hspace=0.0)
 
 
 
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     #         GOES                            #
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    
+    axarr[displays['goes']] = plt.subplot(gs1[0:2, 0:3])
     goes_y_min = 1E-9
     goes_y_max = 1E-5
     axarr[displays['goes']].set_ylabel('Watts $m^{-2}$')
@@ -426,64 +434,6 @@ if __name__=='__main__':
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     #         PSP                             #
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    # # PSP 
-    # # clipping low frequency
-    # ndi = np.where(l_data.freq > 1E5)      # new data indices
-    # l_data.data = l_data.data[:,ndi[0]]
-    # l_data.freq = l_data.freq[ndi[0]]    
-
-
-    # v_minl = np.percentile(l_data.data, 1)
-    # v_maxl = np.percentile(l_data.data, 99.9)
-
-    # v_minh = np.percentile(h_data.data, 1)
-    # v_maxh = np.percentile(h_data.data, 99)
-
-    # x_lims = [dates.date2num(h_data.epoch[0]), dates.date2num(h_data.epoch[-1])]
-
-    # hflim = [h_data.freq[0]/1E6, h_data.freq[-1]/1E6]
-    # lflim = [l_data.freq[0]/1E6, l_data.freq[-1]/1E6]
-
-
-
-    
-    # axarr[displays['psp_h']].set_yscale('log')
-    # imh = axarr[displays['psp_h']].pcolormesh(dates.date2num(h_data.epoch), h_data.freq/1E6 , h_data.data.T,vmin=v_minh, vmax=v_maxh)
-    # axarr[displays['psp_h']].invert_yaxis()
-    # axarr[displays['psp_h']].set_xticks([])
-    # axarr[displays['psp_h']].set_ylabel("Frequency [MHz] ")
-
-    # #plt.gca().invert_yaxis()
-    # # imh = axarr[displays['psp_h']].imshow(h_data.data.T,
-	# # 	aspect = 'auto',
-	# # 	extent = [x_lims[0], x_lims[1], hflim[-1], hflim[0]],
-	# # 	vmin=v_minh, vmax=v_maxh)
-    # # axarr[displays['psp_h']].set_xticks([])
-
-
-    # axarr[displays['psp_l']].set_yscale('log')
-    # iml = axarr[displays['psp_l']].pcolormesh(dates.date2num(l_data.epoch), l_data.freq/1E6 , l_data.data.T,vmin=v_minl, vmax=v_maxl)
-    # axarr[displays['psp_l']].invert_yaxis()
-    # axarr[displays['psp_l']].set_xticks([])
-    # axarr[displays['psp_l']].set_ylabel("Frequency [MHz] ")
-
-    # #plt.gca().invert_yaxis()
-    # # iml = axarr[displays['psp_l']].imshow(l_data.data.T,
-	# # 	aspect = 'auto',
-	# # 	extent = [x_lims[0], x_lims[1], lflim[-1], lflim[0]],
-	# # 	vmin=v_minl, vmax=v_maxl)
-    # # axarr[displays['psp_l']].set_xticks([])
-
-
-    # # # LOFAR
-    # # freq_LOFAR = np.linspace(start_freq_LOFAR, end_freq_LOFAR, num=np.shape(data_LOFAR)[1])
-    # # axarr[displays['lofar']].set_yscale('log')
-    # # imlofar = axarr[displays['lofar']].pcolormesh(time_LOFAR, freq_LOFAR , data_LOFAR)
-    
-
-
-
-
     # PSP 
     # clipping low frequency
     ndi = np.where(l_data.freq > 8E5)      # new data indices
@@ -512,6 +462,7 @@ if __name__=='__main__':
     end_freq_psp = 2E6
     start_freq_psp = psp_data.freq[0]
 
+    axarr[displays['psp']] = plt.subplot(gs2[0:2, 0:3])
     axarr[displays['psp']].set_yscale('log')
     iml = axarr[displays['psp']].pcolormesh(dates.date2num(psp_data.epoch), psp_data.freq/1E6, psp_data.data.T,
         vmin=v_min_psp, vmax=v_max_psp)
@@ -538,6 +489,7 @@ if __name__=='__main__':
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     #         LOFAR                           #
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    axarr[displays['lofar']] = plt.subplot(gs2[2, 0:3])
     imlofar = axarr[displays['lofar']].imshow(data_LOFAR, aspect='auto',
             extent=(start_time_LOFAR, end_time_LOFAR, end_freq_LOFAR,start_freq_LOFAR),
             vmin=np.percentile(data_LOFAR, 30.0),
