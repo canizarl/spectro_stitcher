@@ -44,6 +44,8 @@ def backsub(data, percentile=1.0):
 
 
 def plot_spectro(file, t0plot, t1plot, downsample=1):
+    plotting = 0
+    saveplots = 0
     
     #--------------------------------------#
     # Note downsampling allows a bigger time range to be read into RAM. 
@@ -116,38 +118,41 @@ def plot_spectro(file, t0plot, t1plot, downsample=1):
     #    Plot the spectrogram
     #
     
-    # plt.figure(0, figsize=(12,6))
-    # imshow(data[::-1,::], aspect='auto',
-    #         extent=(tim_mpl[0], tim_mpl[-1], start_freq, end_freq),
-    #         cmap=plt.get_cmap('plasma'),
-    #         vmin=np.percentile(data, 30.0),
-    #         vmax=np.percentile(data, 97.9)
-    #         )
+
+    if plotting == 1:
+        plt.figure(0, figsize=(12,6))
+        imshow(data[::-1,::], aspect='auto',
+                extent=(tim_mpl[0], tim_mpl[-1], start_freq, end_freq),
+                cmap=plt.get_cmap('plasma'),
+                vmin=np.percentile(data, 30.0),
+                vmax=np.percentile(data, 97.9)
+                )
+        
+        yymmdd=f.attrs['OBSERVATION_END_UTC'][0:10]
+        xlabel('Time (UT)')
+        ylabel('Frequency (MHz)')
+        title('LOFAR %s Beam 000 %s' %(yymmdd,target))
+        np.save('dynamic_spec_hba.npy',data)
+        extent=[tim_mpl[0], tim_mpl[-1], end_freq, start_freq]
+        np.save('extent_hba.npy',extent)
+        ax = plt.gca()
+        ax.set_yscale('log')
+        ax.xaxis_date()
+        ax.xaxis.set_major_locator(dates.MinuteLocator(interval=5))
+        ax.xaxis.set_minor_locator(dates.SecondLocator(interval=60))
+        ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
+
+        runtime1=datetime.now()
+        runtime = runtime1 - runtime0
+        print('Execution time: %s seconds' %(runtime.seconds))
+        plt.show()
+        if saveplots ==1:
+            plt.savefig('L701913_TAB_2019-04-13_Beam_000.png')
+            close()
     
-    # yymmdd=f.attrs['OBSERVATION_END_UTC'][0:10]
-    # xlabel('Time (UT)')
-    # ylabel('Frequency (MHz)')
-    # title('LOFAR %s Beam 000 %s' %(yymmdd,target))
-    # np.save('dynamic_spec_hba.npy',data)
-    # extent=[tim_mpl[0], tim_mpl[-1], end_freq, start_freq]
-    # np.save('extent_hba.npy',extent)
-    # ax = plt.gca()
-    # ax.set_yscale('log')
-    # ax.xaxis_date()
-    # ax.xaxis.set_major_locator(dates.MinuteLocator(interval=5))
-    # ax.xaxis.set_minor_locator(dates.SecondLocator(interval=60))
-    # ax.xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
-
-    # runtime1=datetime.now()
-    # runtime = runtime1 - runtime0
-    # print('Execution time: %s seconds' %(runtime.seconds))
-    # plt.show()
-    # #plt.savefig('L701913_TAB_2019-04-13_Beam_000.png')
-    # #close()
     return data[::-1,::],tim_mpl[0], tim_mpl[-1], start_freq, end_freq
-
     # freq = np.arange(start_freq,end_freq,)
-    #return data[::-1,::],tim_mpl,start_freq, end_freq
+    # # #return data[::-1,::],tim_mpl,start_freq, end_freq
 
 if __name__=='__main__':
 

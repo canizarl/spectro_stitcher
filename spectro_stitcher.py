@@ -23,9 +23,6 @@
 
 """
 
-
-
-
 import numpy as np
 from datetime import datetime
 from datetime import timedelta
@@ -47,8 +44,6 @@ class mydate:
         self.year = year
         self.month = month
         self.day = day
-
-
 
 
 def load_PSP_data(date,band):
@@ -103,7 +98,6 @@ def load_PSP_data(date,band):
     return my_spectro
 
 
-
 def freqlabelsmaker(freq):
     """
     No longer used
@@ -129,8 +123,6 @@ def freqlabelsmaker(freq):
     ylabs = [ylab0, ylab2, ylab4, ylab6, ylab8, ylab10]
 
     return ylabs
-
-
 
 
 def manual_PSP_delay(t0,t1):
@@ -196,7 +188,6 @@ def manual_PSP_delay(t0,t1):
     return delay
 
 
-
 def get_goes(tr,t0,t1):
     results = Fido.search(a.Time(tr), a.Instrument('XRS'))
     files = Fido.fetch(results)
@@ -235,19 +226,12 @@ def get_goes(tr,t0,t1):
 
 
 
-
-
-
-
-
-
-
 if __name__=='__main__':
     print(f" RUNNING spectro_stitcher")
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    #             General                     #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
+    #             General                         #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
     
     day = "09"
     month = "04"
@@ -257,19 +241,24 @@ if __name__=='__main__':
 
 
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    #             PSP                         #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
+    #             PSP                             #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
     psp_delay = manual_PSP_delay(t0,t1)
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
+    #  ADD KERNEL TO AUTOMATICALL EXTRACT PSP LOCATION AND CALCULATE THE TIME DELAY
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
     # orbiter_kernel = spicedata.get_kernel('psp')
     #print(psp_delay)
     # for psp 
     date_open = mydate(year,month,day)
 
     
-
-    ## import data
-    #import PSP h data
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       IMPORT DATA          """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    #import PSP h data FOR THE WHOLE DAY
     h_data = load_PSP_data(date_open,"h")
     #import PSP l data
     l_data = load_PSP_data(date_open,"l")
@@ -277,9 +266,12 @@ if __name__=='__main__':
     #dt = timedelta(seconds=(6.5)*60)             # time shift due to speed of light  (manual )
     dt = timedelta(seconds=psp_delay)
 
+    # GET DATA FOR THE TIME OF INTEREST
     #Data range:
+    # FIND WHERE IS THE DATA OF INTEREST
     psp_time_range_indices_h = np.where((h_data.epoch>=t0-dt) & (h_data.epoch<=t1-dt))
     psp_time_range_indices_l = np.where((l_data.epoch>=t0-dt) & (l_data.epoch<=t1-dt))
+    # KEEP ONLY THE DATA OF INTEREST I.E. TIME RANGES
     h_data.data = h_data.data[psp_time_range_indices_h[0],:]  
     h_data.epoch = h_data.epoch[psp_time_range_indices_h]
     l_data.data = l_data.data[psp_time_range_indices_l[0],:]  
@@ -300,9 +292,9 @@ if __name__=='__main__':
     print(" ")
 
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
     #             LOFAR                       #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
     file_lofar = "L701167_SAP000_B000_S0_P000_bf.h5"
 
     #import lofar data
@@ -310,8 +302,11 @@ if __name__=='__main__':
     print(" ----------------------------- ")
     print(" ")
     print("LOFAR Report: ")
+    
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       IMPORT DATA          """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     data_LOFAR, start_time_LOFAR, end_time_LOFAR, start_freq_LOFAR, end_freq_LOFAR = pbs.plot_spectro(file_lofar, t0, t1, downsample=1)
-    #data_LOFAR, time_LOFAR, start_freq_LOFAR, end_freq_LOFAR = pbs.plot_spectro(file_lofar, t0, t1, downsample=1)
 
     print("End LOFAR report.")
     print(" ")
@@ -323,9 +318,9 @@ if __name__=='__main__':
 
 
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
     #         GOES                            #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
     # GOES REPORT
     print(" ")
     print(" ----------------------------- ")
@@ -333,10 +328,12 @@ if __name__=='__main__':
     print("GOES Report: ")
 
     tr = TimeRange(['2019-04-09 10:00', '2019-04-09 15:00'])
+    
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       IMPORT DATA          """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     xrsa_data, xrsb_data = get_goes(tr,datetime(int(year),int(month),int(day),10,0),datetime(int(year),int(month),int(day),15,0))
     
-
-
 
     print(f" {tr}" )
 
@@ -348,9 +345,9 @@ if __name__=='__main__':
 
 
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
     #         SWAVES                          #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
     print(" ")
     print(" ----------------------------- ")
     print(" ")
@@ -376,45 +373,46 @@ if __name__=='__main__':
 
 
 
-
-
-
-
-
-
-
-
-
-
     """ ----------------------------------------------- """
                         ## PLOTS
     """ ----------------------------------------------- """
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
     #             General                     #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
     
+    # ORDER OF PLOTS FROM TOP TO BOTTOM
     displays = {'psp':0, 'lofar':1,'goes':2} 
 
+    # CONTROLS THE GLOBAL MARGINS LEFT AND RIGHT OF THE PLOTS
+    leftmargin = 0.1
+    rightmargin = 0.95
 
+    # INITIALISING THE SUBPLOTS
     f, axarr = plt.subplots(len(displays),1,gridspec_kw={'height_ratios': [1, 0.5, 0.2]},figsize=(15,10)) 
-    f.subplots_adjust(left=0.15, bottom=0.13, right=0.90, top=0.95, wspace=0.35, hspace=0.26)
+    
+    # THIS CONTROLS GLOBAL SUBPLOTS APPEARANCE DOING NOTHING NOW BECAUSE USING LOCAL SUBPLOTS
+    # f.subplots_adjust(left=leftmargin, bottom=0.13, right=rightmargin, top=0.95, wspace=0.35, hspace=0.26)
 
 
+    # OBJECTS FOR SUBPLOTS 
     # object 1 for goes alone
     gs1 = gs.GridSpec(nrows = 3, ncols = 1)
-    gs1.update(left=0.05, right=0.9,top = 0.2 , bottom = 0.05,  hspace=0.0)
+    gs1.update(left=leftmargin, right=rightmargin,top = 0.2 , bottom = 0.05,  hspace=0.0)
 
     # object 2 for psp and lofar 
     gs2 = gs.GridSpec(nrows = 3, ncols = 1)
-    gs2.update(left=0.05, right=0.9,top = 0.95 , bottom = 0.3,  hspace=0.0)
+    gs2.update(left=leftmargin, right=rightmargin,top = 0.95 , bottom = 0.3,  hspace=0.0)
 
 
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    #         GOES                            #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+    #         GOES                                #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
     
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Plotting             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     axarr[displays['goes']] = plt.subplot(gs1[0:2, 0:3])
     goes_y_min = 1E-9
     goes_y_max = 1E-5
@@ -428,48 +426,59 @@ if __name__=='__main__':
     axarr[displays['goes']].axvline(x=t0, color='r', linestyle='--')
     axarr[displays['goes']].axvline(x=t1, color='r', linestyle='--')
     axarr[displays['goes']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
-    # axarr[displays['goes']].set_title('GOES Xray Flux')
 
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    #         PSP                             #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+    #         PSP                                 #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
     # PSP 
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """        Clipping            """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     # clipping low frequency
     ndi = np.where(l_data.freq > 8E5)      # new data indices
     l_data.data = l_data.data[:,ndi[0]]
     l_data.freq = l_data.freq[ndi[0]]    
 
-    # x_lims = [dates.date2num(h_data.epoch[0]), dates.date2num(h_data.epoch[-1])]
-
-    # hflim = [h_data.freq[0]/1E6, h_data.freq[-1]/1E6]
-    # lflim = [l_data.freq[0]/1E6, l_data.freq[-1]/1E6]
-
     
-    
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """  Joining HFR and LFR       """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     psp_data = data_spectro([],[],[])
     psp_data.data = np.hstack((l_data.data,h_data.data))       
     psp_data.epoch = l_data.epoch
     psp_data.freq = np.concatenate((l_data.freq, h_data.freq))
 
+    # frequency limits
     flims = [psp_data.freq[0], 2E6]
 
-    v_min_psp = np.percentile(psp_data.data, 0.5)
-    v_max_psp = np.percentile(psp_data.data, 99.9)
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """         LEVELS             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    v_min_psp = np.percentile(psp_data.data, 15)
+    v_max_psp = np.percentile(psp_data.data, 99)
     
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """         Extend             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     start_time_psp = psp_data.epoch[0]
     end_time_psp = psp_data.epoch[-1]
     end_freq_psp = 2E6
     start_freq_psp = psp_data.freq[0]
 
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Plotting             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     axarr[displays['psp']] = plt.subplot(gs2[0:2, 0:3])
     axarr[displays['psp']].set_yscale('log')
     iml = axarr[displays['psp']].pcolormesh(dates.date2num(psp_data.epoch), psp_data.freq/1E6, psp_data.data.T,
         vmin=v_min_psp, vmax=v_max_psp)
     axarr[displays['psp']].invert_yaxis()
     axarr[displays['psp']].set_xticks([])
-    axarr[displays['psp']].set_ylabel("Frequency [MHz] ")
-    #axarr[displays['psp']].set_title('PSP/FIELDS')
+
+    # TITLE
     axarr[displays['psp']].text(.1,.9,'PSP/FIELDS',
         horizontalalignment='center',
         fontsize = 'large',
@@ -477,18 +486,29 @@ if __name__=='__main__':
         fontweight = 'bold',
         transform=axarr[displays['psp']].transAxes)
 
+    # Additional info
     axarr[displays['psp']].text(.1,.1,f"TIME Shifted {psp_delay:0.02f}s",
         horizontalalignment='center',
         fontsize = 'small',
         color = 'w',
         fontweight = 'bold',
         transform=axarr[displays['psp']].transAxes)
+    
+    # axarr[displays['psp']].yaxis.get_offset_text().set_visible(False)
     # axarr[displays['psp']].axis([start_time_psp, end_time_psp, end_freq_psp,start_freq_psp])
 
 
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    #         LOFAR                           #
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+    #         LOFAR                               #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Plotting             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
+    # CHANGE TO PCOLORMESH to see if solves y axis problems 
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! #
     axarr[displays['lofar']] = plt.subplot(gs2[2, 0:3])
     imlofar = axarr[displays['lofar']].imshow(data_LOFAR, aspect='auto',
             extent=(start_time_LOFAR, end_time_LOFAR, end_freq_LOFAR,start_freq_LOFAR),
@@ -496,44 +516,28 @@ if __name__=='__main__':
             vmax=np.percentile(data_LOFAR, 97.9)
             ) 
 
-    # axarr[displays['lofar']].set_title('LOFAR')
+    # TITLE 
     axarr[displays['lofar']].text(.1,.8,'LOFAR',
-    horizontalalignment='center',
-    fontsize = 'large',
-    color = 'w',
-    fontweight = 'bold',
-    transform=axarr[displays['lofar']].transAxes)
+        horizontalalignment='center',
+        fontsize = 'large',
+        color = 'w',
+        fontweight = 'bold',
+        transform=axarr[displays['lofar']].transAxes)
+    # PLOT SETTINGS
     axarr[displays['lofar']].set_yscale('log')
     axarr[displays['lofar']].set_ylim((1E2,2E1))
     axarr[displays['lofar']].set_ylabel("Frequency [MHz] ")
     axarr[displays['lofar']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
 
 
-
-    # axarr[displays['lofar']].set_yticks([])
-
-
-
-
-
-
-    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
-                # time axis labels 
-    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """    
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """      time axis labels      """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
 
     axarr[displays['lofar']].xaxis_date()
     axarr[displays['lofar']].xaxis.set_major_locator(dates.MinuteLocator(interval=5))
     axarr[displays['lofar']].xaxis.set_minor_locator(dates.SecondLocator(interval=60))
     axarr[displays['lofar']].xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
-    
-    
-    # axarr[displays['psp']].xaxis_date()
-    # axarr[displays['psp']].xaxis.set_major_locator(dates.MinuteLocator(interval=5))
-    # axarr[displays['psp']].xaxis.set_minor_locator(dates.SecondLocator(interval=60))
-    # axarr[displays['psp']].xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
-    
-    
-    
     
     plt.show()
 
