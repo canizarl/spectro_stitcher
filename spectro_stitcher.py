@@ -34,6 +34,7 @@ import matplotlib.gridspec as gs
 import matplotlib.pyplot as plt
 import math
 
+from scipy.io import readsav
 
 from sunpy.timeseries import TimeSeries
 from sunpy.time import TimeRange, parse_time
@@ -224,6 +225,105 @@ def get_goes(tr,t0,t1):
 
 
 
+def get_swaves(filename,t0,t1):
+    data = readsav(filename)
+    swaves_freqs = data['frequencies']
+    swaves_back = data['back']
+    swaves_spec = data['spectrum']
+    
+
+    observation_start_time = datetime(t0.year,t0.month,t0.day,0,0)
+    time_res = timedelta(seconds=60)
+    swaves_epoch = []
+    swaves_epoch.append(observation_start_time)
+    for i in range(0,24*60-1):
+        swaves_epoch.append(swaves_epoch[-1]+time_res)
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Backsub              """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    # spec_buffer = []
+    # swaves_back = swaves_back[::-1]
+    # for i in range(0, swaves_spec.shape[0]):
+    #     spec_buffer.append(np.multiply(swaves_spec[i,:],swaves_back))
+
+    # swaves_spec = backsub(np.array(spec_buffer))
+
+
+    swaves_spec = backsub(np.array(swaves_spec.T),percentile=20.0)
+    swaves_spec = swaves_spec.T
+
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Time Range           """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    swaves_epoch = np.array(swaves_epoch)
+    swaves_spec = np.array(swaves_spec)
+    swaves_freqs = np.array(swaves_freqs)
+
+    # FIND WHERE IS THE DATA OF INTEREST
+    swaves_time_range_indices = np.where((swaves_epoch>=t0) & (swaves_epoch<=t1))
+    # KEEP ONLY THE DATA OF INTEREST I.E. TIME RANGES
+    swaves_spec = swaves_spec[swaves_time_range_indices[0],:]  
+    swaves_epoch = swaves_epoch[swaves_time_range_indices]
+
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """        Clipping            """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    # clipping low frequency
+    # min_freq = 0  # MHz    //  0 for no clipping
+    # min_freq = min_freq*1E3 # converting to kHz. OG data is in kHz.
+
+    # ndi = np.where(swaves_freqs >= min_freq)      # new data indices
+    # swaves_spec = swaves_spec[:,ndi[0]]
+    # swaves_freqs = swaves_freqs[ndi[0]]    
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """  Remove bad freqs          """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    # # NO NEED
+    # # average of frequency channels
+    # spec_ave_freqs = np.mean(swaves_spec, axis=0)
+    # swaves_spec = np.delete(swaves_spec,np.where(spec_ave_freqs==0),axis=1)
+    # swaves_freqs = np.delete(swaves_freqs,np.where(spec_ave_freqs==0)) 
+    return swaves_spec, swaves_epoch, swaves_freqs
+
+
+
+
+
+
+
+
+def backsub(data, percentile=1.0):
+    # written by Eoin Carley
+    # Get time slices with standard devs in the bottom nth percentile.
+    # Get average spectra from these time slices.
+    # Devide through by this average spec.
+    # Expects (row, column)
+
+    print('Performing background subtraction.')
+    data = np.log10(data)
+    data[np.where(np.isinf(data)==True)] = 1.0
+    data[np.where(np.isnan(data)==True)] = 1.0
+    data_std = np.std(data, axis=0)
+    data_std = data_std[np.nonzero(data_std)]
+    min_std_indices = np.where( data_std < np.percentile(data_std, percentile) )[0]
+    min_std_spec = data[:, min_std_indices]
+    min_std_spec = np.mean(min_std_spec, axis=1)
+    data = np.transpose(np.divide( np.transpose(data), min_std_spec))
+    print('Background subtraction finished.')
+
+    #Alternative: Normalizing frequency channel responses using median of values.
+        #for sb in np.arange(data.shape[0]):
+        #       data[sb, :] = data[sb, :]/np.mean(data[sb, :])
+
+    return data
+
+
+
+
 
 
 if __name__=='__main__':
@@ -352,15 +452,14 @@ if __name__=='__main__':
     print(" ----------------------------- ")
     print(" ")
     print("SWAVES Report: ")
+    
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       IMPORT DATA          """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    swaves_spec, swaves_epoch, swaves_freqs = get_swaves("swaves_average_20190409_a.sav",t0,t1)
+    
 
-    
-    swaves_data = [] 
-    with open('swaves_average_20190409_a_lfr.txt') as fobj: 
-        for line in fobj: 
-            row = line.split() 
-            swaves_data.append(row[:]) 
-    
-    
+
     print("End SWAVES report.")
     print(" ")
     print(" ----------------------------- ")
@@ -382,14 +481,14 @@ if __name__=='__main__':
     """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
     
     # ORDER OF PLOTS FROM TOP TO BOTTOM
-    displays = {'psp':0, 'lofar':1,'goes':2} 
+    displays = {'swaves':0, 'psp':1, 'lofar':2,'goes':3} 
 
     # CONTROLS THE GLOBAL MARGINS LEFT AND RIGHT OF THE PLOTS
     leftmargin = 0.1
     rightmargin = 0.95
 
     # INITIALISING THE SUBPLOTS
-    f, axarr = plt.subplots(len(displays),1,gridspec_kw={'height_ratios': [1, 0.5, 0.2]},figsize=(15,10)) 
+    f, axarr = plt.subplots(len(displays),1,gridspec_kw={'height_ratios': [1, 1, 1, 1]},figsize=(10,13)) 
     
     # THIS CONTROLS GLOBAL SUBPLOTS APPEARANCE DOING NOTHING NOW BECAUSE USING LOCAL SUBPLOTS
     # f.subplots_adjust(left=leftmargin, bottom=0.13, right=rightmargin, top=0.95, wspace=0.35, hspace=0.26)
@@ -398,34 +497,69 @@ if __name__=='__main__':
     # OBJECTS FOR SUBPLOTS 
     # object 1 for goes alone
     gs1 = gs.GridSpec(nrows = 3, ncols = 1)
-    gs1.update(left=leftmargin, right=rightmargin,top = 0.2 , bottom = 0.05,  hspace=0.0)
+    gs1.update(left=leftmargin, right=rightmargin,top = 0.1 , bottom = 0,  hspace=0.0)
 
     # object 2 for psp and lofar 
     gs2 = gs.GridSpec(nrows = 3, ncols = 1)
-    gs2.update(left=leftmargin, right=rightmargin,top = 0.95 , bottom = 0.3,  hspace=0.0)
+    gs2.update(left=leftmargin, right=rightmargin,top = 0.50 , bottom = 0.11,  hspace=0.0)
+
+
+    # object 3 for swaves
+    gs3 = gs.GridSpec(nrows = 3, ncols = 1)
+    gs3.update(left=leftmargin, right=rightmargin,top = 0.99 , bottom = 0.501,  hspace=0.0)
+
+
+
 
 
 
     """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
-    #         GOES                                #
+    #         SWAVES                              #
     """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """         LEVELS             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    v_min_swaves = np.percentile(swaves_spec.data, 10)
+    v_max_swaves = np.percentile(swaves_spec.data, 99.5)
+
     
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     """       Plotting             """
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    axarr[displays['goes']] = plt.subplot(gs1[0:2, 0:3])
-    goes_y_min = 1E-9
-    goes_y_max = 1E-5
-    axarr[displays['goes']].set_ylabel('Watts $m^{-2}$')
-    axarr[displays['goes']].set_yscale('log')
-    axarr[displays['goes']].set_ylim((goes_y_min,goes_y_max))
-    axarr[displays['goes']].plot(xrsb_data,'r-',label = r'GOES 1.0 -- 8.0 $\AA$')
-    axarr[displays['goes']].plot(xrsa_data,'b-',label = r'GOES 0.5 -- 4.0 $\AA$')
-    axarr[displays['goes']].xaxis.set_major_formatter(dates.DateFormatter("%H-%M"))
-    axarr[displays['goes']].legend(loc='upper left')
-    axarr[displays['goes']].axvline(x=t0, color='r', linestyle='--')
-    axarr[displays['goes']].axvline(x=t1, color='r', linestyle='--')
-    axarr[displays['goes']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
+    axarr[displays['swaves']] = plt.subplot(gs3[0, 0:3])
+    axarr[displays['swaves']].set_yscale('log')
+    im_swaves = axarr[displays['swaves']].pcolormesh(dates.date2num(swaves_epoch), swaves_freqs/1E3, swaves_spec.T,
+        vmin=v_min_swaves, vmax=v_max_swaves,
+        cmap = 'inferno')
+    axarr[displays['swaves']].invert_yaxis()
+    axarr[displays['swaves']].set_ylabel("Frequency [MHz] ")
+
+    # TITLE
+    axarr[displays['swaves']].text(.1,.9,'S/WAVES',
+        horizontalalignment='center',
+        fontsize = 'large',
+        color = 'w',
+        fontweight = 'bold',
+        transform=axarr[displays['swaves']].transAxes)
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """      time axis labels      """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+
+    axarr[displays['swaves']].xaxis_date()
+    axarr[displays['swaves']].xaxis.set_major_locator(dates.MinuteLocator(interval=5))
+    axarr[displays['swaves']].xaxis.set_minor_locator(dates.SecondLocator(interval=60))
+    axarr[displays['swaves']].xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
+    axarr[displays['swaves']].set_xlabel("S/WAVES Time UT")
+        
+
+
+
+
+
+
+
 
 
     """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
@@ -477,6 +611,7 @@ if __name__=='__main__':
         vmin=v_min_psp, vmax=v_max_psp)
     axarr[displays['psp']].invert_yaxis()
     axarr[displays['psp']].set_xticks([])
+    axarr[displays['psp']].set_ylabel("Frequency [MHz] ")
 
     # TITLE
     axarr[displays['psp']].text(.1,.9,'PSP/FIELDS',
@@ -526,7 +661,6 @@ if __name__=='__main__':
     # PLOT SETTINGS
     axarr[displays['lofar']].set_yscale('log')
     axarr[displays['lofar']].set_ylim((1E2,2E1))
-    axarr[displays['lofar']].set_ylabel("Frequency [MHz] ")
     axarr[displays['lofar']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
 
 
@@ -539,6 +673,32 @@ if __name__=='__main__':
     axarr[displays['lofar']].xaxis.set_minor_locator(dates.SecondLocator(interval=60))
     axarr[displays['lofar']].xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
     
+
+
+
+
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+    #         GOES                                #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+    
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Plotting             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    axarr[displays['goes']] = plt.subplot(gs1[0:2, 0:3])
+    goes_y_min = 1E-9
+    goes_y_max = 1E-5
+    axarr[displays['goes']].set_ylabel('Watts $m^{-2}$')
+    axarr[displays['goes']].set_yscale('log')
+    axarr[displays['goes']].set_ylim((goes_y_min,goes_y_max))
+    axarr[displays['goes']].plot(xrsb_data,'r-',label = r'GOES 1.0 -- 8.0 $\AA$')
+    axarr[displays['goes']].plot(xrsa_data,'b-',label = r'GOES 0.5 -- 4.0 $\AA$')
+    axarr[displays['goes']].xaxis.set_major_formatter(dates.DateFormatter("%H-%M"))
+    axarr[displays['goes']].legend(loc='upper left')
+    axarr[displays['goes']].axvline(x=t0, color='r', linestyle='--')
+    axarr[displays['goes']].axvline(x=t1, color='r', linestyle='--')
+    axarr[displays['goes']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
+
+
     plt.show()
 
 

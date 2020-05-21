@@ -14,8 +14,11 @@ with open('swaves_average_20190409_a_lfr.txt') as fobj:
         swaves_data.append(row[:]) 
 
 
-array1 = swaves_data[0]
-array2 = swaves_data[1]
+# time array
+# swaves_epoch = 
+
+swaves_freq_l = swaves_data[0]
+swaves_back_l = swaves_data[1]
 data_buffer = []
 for i in range(2,len(swaves_data)-1): 
     data_buffer.append(swaves_data[i][1:]) 
@@ -35,8 +38,8 @@ with open('swaves_average_20190409_a_hfr.txt') as fobj:
         swaves_data.append(row[:]) 
 
 
-array3 = swaves_data[0]
-array4 = swaves_data[1]
+swaves_freq_h = swaves_data[0]
+swaves_back_h = swaves_data[1]
 data_buffer = []
 for i in range(2,len(swaves_data)-1): 
     data_buffer.append(swaves_data[i][1:]) 
