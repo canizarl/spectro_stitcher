@@ -225,7 +225,7 @@ def get_goes(tr,t0,t1):
 
 
 
-def get_swaves(filename,t0,t1):
+def get_swaves(filename,t0,t1,percentile):
     data = readsav(filename)
     swaves_freqs = data['frequencies']
     swaves_back = data['back']
@@ -236,8 +236,11 @@ def get_swaves(filename,t0,t1):
     time_res = timedelta(seconds=60)
     swaves_epoch = []
     swaves_epoch.append(observation_start_time)
-    for i in range(0,24*60-1):
+    for i in range(0,(24*60)-1):
         swaves_epoch.append(swaves_epoch[-1]+time_res)
+    if len(swaves_epoch) != (24*60):
+        print(f"WARNING: swaves_epoch does not have the correct lenght. Length: {len(swaves_epoch)}")
+
 
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     """       Backsub              """
@@ -250,7 +253,7 @@ def get_swaves(filename,t0,t1):
     # swaves_spec = backsub(np.array(spec_buffer))
 
 
-    swaves_spec = backsub(np.array(swaves_spec.T),percentile=20.0)
+    swaves_spec = backsub(np.array(swaves_spec.T),percentile)
     swaves_spec = swaves_spec.T
 
 
@@ -272,12 +275,12 @@ def get_swaves(filename,t0,t1):
     """        Clipping            """
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     # clipping low frequency
-    # min_freq = 0  # MHz    //  0 for no clipping
-    # min_freq = min_freq*1E3 # converting to kHz. OG data is in kHz.
+    min_freq = 4E-1  # MHz    //  0 for no clipping
+    min_freq = min_freq*1E3 # converting to kHz. OG data is in kHz.
 
-    # ndi = np.where(swaves_freqs >= min_freq)      # new data indices
-    # swaves_spec = swaves_spec[:,ndi[0]]
-    # swaves_freqs = swaves_freqs[ndi[0]]    
+    ndi = np.where(swaves_freqs >= min_freq)      # new data indices
+    swaves_spec = swaves_spec[:,ndi[0]]
+    swaves_freqs = swaves_freqs[ndi[0]]    
 
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     """  Remove bad freqs          """
@@ -307,6 +310,7 @@ def backsub(data, percentile=1.0):
     data = np.log10(data)
     data[np.where(np.isinf(data)==True)] = 1.0
     data[np.where(np.isnan(data)==True)] = 1.0
+    
     data_std = np.std(data, axis=0)
     data_std = data_std[np.nonzero(data_std)]
     min_std_indices = np.where( data_std < np.percentile(data_std, percentile) )[0]
@@ -338,6 +342,30 @@ if __name__=='__main__':
     year = "2019"
     t0 = datetime(2019, 4, 9, 12, 30, 0)
     t1 = datetime(2019, 4, 9, 13, 00, 0)
+
+
+
+
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
+    #         SWAVES                          #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
+    print(" ")
+    print(" ----------------------------- ")
+    print(" ")
+    print("SWAVES Report: ")
+    
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       IMPORT DATA          """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    swaves_spec, swaves_epoch, swaves_freqs = get_swaves("swaves_average_20190409_a.sav",t0,t1, percentile = 100)
+    
+
+
+    print("End SWAVES report.")
+    print(" ")
+    print(" ----------------------------- ")
+    print(" ")
+   
 
 
 
@@ -445,27 +473,6 @@ if __name__=='__main__':
 
 
 
-    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
-    #         SWAVES                          #
-    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
-    print(" ")
-    print(" ----------------------------- ")
-    print(" ")
-    print("SWAVES Report: ")
-    
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    """       IMPORT DATA          """
-    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    swaves_spec, swaves_epoch, swaves_freqs = get_swaves("swaves_average_20190409_a.sav",t0,t1)
-    
-
-
-    print("End SWAVES report.")
-    print(" ")
-    print(" ----------------------------- ")
-    print(" ")
-   
-
 
 
 
@@ -496,20 +503,22 @@ if __name__=='__main__':
 
     # OBJECTS FOR SUBPLOTS 
     # object 1 for goes alone
-    gs1 = gs.GridSpec(nrows = 3, ncols = 1)
-    gs1.update(left=leftmargin, right=rightmargin,top = 0.1 , bottom = 0,  hspace=0.0)
+    gs1 = gs.GridSpec(nrows = 1, ncols = 1)
+    gs1.update(left=leftmargin, right=rightmargin,top = 0.2 , bottom = 0.1,  hspace=0.0)
 
     # object 2 for psp and lofar 
     gs2 = gs.GridSpec(nrows = 3, ncols = 1)
-    gs2.update(left=leftmargin, right=rightmargin,top = 0.50 , bottom = 0.11,  hspace=0.0)
+    gs2.update(left=leftmargin, right=rightmargin,top = 0.60 , bottom = 0.25,  hspace=0.0)
 
 
     # object 3 for swaves
-    gs3 = gs.GridSpec(nrows = 3, ncols = 1)
-    gs3.update(left=leftmargin, right=rightmargin,top = 0.99 , bottom = 0.501,  hspace=0.0)
+    gs3 = gs.GridSpec(nrows = 1, ncols = 1)
+    gs3.update(left=leftmargin, right=rightmargin,top = 0.93 , bottom = 0.65,  hspace=0.0)
 
 
 
+
+    colormap = 'inferno'
 
 
 
@@ -520,8 +529,8 @@ if __name__=='__main__':
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     """         LEVELS             """
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    v_min_swaves = np.percentile(swaves_spec.data, 10)
-    v_max_swaves = np.percentile(swaves_spec.data, 99.5)
+    v_min_swaves = np.percentile(swaves_spec.data, 20)
+    v_max_swaves = np.percentile(swaves_spec.data, 99)
 
     
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
@@ -531,7 +540,7 @@ if __name__=='__main__':
     axarr[displays['swaves']].set_yscale('log')
     im_swaves = axarr[displays['swaves']].pcolormesh(dates.date2num(swaves_epoch), swaves_freqs/1E3, swaves_spec.T,
         vmin=v_min_swaves, vmax=v_max_swaves,
-        cmap = 'inferno')
+        cmap = colormap)
     axarr[displays['swaves']].invert_yaxis()
     axarr[displays['swaves']].set_ylabel("Frequency [MHz] ")
 
@@ -551,14 +560,8 @@ if __name__=='__main__':
     axarr[displays['swaves']].xaxis.set_major_locator(dates.MinuteLocator(interval=5))
     axarr[displays['swaves']].xaxis.set_minor_locator(dates.SecondLocator(interval=60))
     axarr[displays['swaves']].xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
-    axarr[displays['swaves']].set_xlabel("S/WAVES Time UT")
+    axarr[displays['swaves']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
         
-
-
-
-
-
-
 
 
 
@@ -590,7 +593,7 @@ if __name__=='__main__':
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     """         LEVELS             """
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    v_min_psp = np.percentile(psp_data.data, 15)
+    v_min_psp = np.percentile(psp_data.data, 1)
     v_max_psp = np.percentile(psp_data.data, 99)
     
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
@@ -607,8 +610,9 @@ if __name__=='__main__':
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     axarr[displays['psp']] = plt.subplot(gs2[0:2, 0:3])
     axarr[displays['psp']].set_yscale('log')
-    iml = axarr[displays['psp']].pcolormesh(dates.date2num(psp_data.epoch), psp_data.freq/1E6, psp_data.data.T,
-        vmin=v_min_psp, vmax=v_max_psp)
+    im_psp = axarr[displays['psp']].pcolormesh(dates.date2num(psp_data.epoch), psp_data.freq/1E6, psp_data.data.T,
+        vmin=v_min_psp, vmax=v_max_psp,
+        cmap = colormap)
     axarr[displays['psp']].invert_yaxis()
     axarr[displays['psp']].set_xticks([])
     axarr[displays['psp']].set_ylabel("Frequency [MHz] ")
@@ -648,8 +652,8 @@ if __name__=='__main__':
     imlofar = axarr[displays['lofar']].imshow(data_LOFAR, aspect='auto',
             extent=(start_time_LOFAR, end_time_LOFAR, end_freq_LOFAR,start_freq_LOFAR),
             vmin=np.percentile(data_LOFAR, 30.0),
-            vmax=np.percentile(data_LOFAR, 97.9)
-            ) 
+            vmax=np.percentile(data_LOFAR, 97.9),
+            cmap = colormap) 
 
     # TITLE 
     axarr[displays['lofar']].text(.1,.8,'LOFAR',
@@ -684,7 +688,7 @@ if __name__=='__main__':
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     """       Plotting             """
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
-    axarr[displays['goes']] = plt.subplot(gs1[0:2, 0:3])
+    axarr[displays['goes']] = plt.subplot(gs1[0, 0:3])
     goes_y_min = 1E-9
     goes_y_max = 1E-5
     axarr[displays['goes']].set_ylabel('Watts $m^{-2}$')
