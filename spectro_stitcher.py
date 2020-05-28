@@ -30,12 +30,13 @@ from psp_dataprep import data_spectro
 import os
 import plot_beam_spectro as pbs
 from matplotlib import dates
+from matplotlib import lines
 import matplotlib.gridspec as gs
 import matplotlib.pyplot as plt
 import math
 
 from scipy.io import readsav
-
+from spacepy import pycdf
 from sunpy.timeseries import TimeSeries
 from sunpy.time import TimeRange, parse_time
 from sunpy.net import hek, Fido, attrs as a
@@ -224,7 +225,6 @@ def get_goes(tr,t0,t1):
     return xrsa_data, xrsb_data
 
 
-
 def get_swaves(filename,t0,t1,percentile):
     data = readsav(filename)
     swaves_freqs = data['frequencies']
@@ -293,10 +293,87 @@ def get_swaves(filename,t0,t1,percentile):
     return swaves_spec, swaves_epoch, swaves_freqs
 
 
+def get_windwaves(myfile,t0,t1,percentile):
+    """ data_from_CDF
+     outputs dynamic spectra data from WIND WAVES CDF datafile.
+     expects: wind waves h1  file. example: wi_h1_wav_20190409_v01.cdf
+     inputs:
+        myfile: string with location of file
+        t0: start time 
+        t1: end time
+        percentile: percentile to be used in backsub routine 
+
+    output:
+        data: 2D numpy matrix of dynamic spectra
+        epoch: 1D numpy array of datetimes
+        freqs: 1D numpy array of the frequency channels. low band and high band merged. 
+
+    """
+
+
+    # OPEN FILE
+    cdf = pycdf.CDF(myfile)
+
+    # EXTRACT DATA
+    l_data = cdf['E_VOLTAGE_RAD1']
+    h_data = cdf['E_VOLTAGE_RAD2']
+
+    # EXTRACT FREQUENCY ARRAYS
+    l_freqs = cdf['Frequency_RAD1']
+    h_freqs = cdf['Frequency_RAD2']
+
+    # EXTRACT TIME ARRAYS
+    epoch = cdf['Epoch']
+
+
+    # CONVERT TO NUMPY ARRAYS
+    l_data = np.array(l_data)
+    h_data = np.array(h_data)
+
+    epoch = np.array(epoch)
+
+
+    data = np.concatenate((l_data,h_data), axis=1)
+
+    freqs = []
+    for items in l_freqs[:]:
+        freqs.append(items) 
+    for items in h_freqs[:]:
+        freqs.append(items) 
+
+    freqs = np.array(freqs)
+
+    cdf.close()
+
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Backsub              """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    data = backsub(data.T, percentile)
+    data = data.T
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Time Range           """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    wwaves_time_range_indices = np.where((epoch>=t0) & (epoch<=t1))
+    data = data[wwaves_time_range_indices[0],:]  
+    epoch = epoch[wwaves_time_range_indices]
 
 
 
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """    Freq Clipping            """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    # clipping low frequency
+    min_freq = 2E-1  # MHz    //  0 for no clipping
+    min_freq = min_freq*1E3 # converting to kHz. OG data is in kHz.
 
+    ndi = np.where(freqs >= min_freq)      # new data indices
+    data = data[:,ndi[0]]
+    freqs = freqs[ndi[0]]
+
+
+    return data, epoch, freqs    
 
 
 def backsub(data, percentile=1.0):
@@ -342,6 +419,33 @@ if __name__=='__main__':
     year = "2019"
     t0 = datetime(2019, 4, 9, 12, 30, 0)
     t1 = datetime(2019, 4, 9, 13, 00, 0)
+
+    
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
+    #         Wind WAVES                          #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """ 
+    print(" ")
+    print(" ----------------------------- ")
+    print(" ")
+    print("Wind WAVES Report: ")
+    
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       IMPORT DATA          """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+
+
+    fname  = "combined_117886/wi_h1_wav_20190409_v01.cdf"
+    data_w, epoch_w, freqs_w = get_windwaves(fname,t0,t1,percentile=50)
+
+
+
+
+
+    print("End Wind WAVES report.")
+    print(" ")
+    print(" ----------------------------- ")
+    print(" ")
+   
 
 
 
@@ -455,7 +559,10 @@ if __name__=='__main__':
     print(" ")
     print("GOES Report: ")
 
-    tr = TimeRange(['2019-04-09 10:00', '2019-04-09 15:00'])
+    goes_t0 = datetime(2019,4,9,10,0)
+    goes_t1 = datetime(2019,4,9,15,0)
+    tr = TimeRange([f'{goes_t0.year}-{goes_t0.month:02}-{goes_t0.day:02} {goes_t0.hour:02}:{goes_t0.minute:02}',
+             f'{goes_t1.year}-{goes_t1.month:02}-{goes_t1.day:02} {goes_t1.hour:02}:{goes_t1.minute:02}'])
     
     # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
     """       IMPORT DATA          """
@@ -472,13 +579,6 @@ if __name__=='__main__':
    
 
 
-
-
-
-
-
-
-
     """ ----------------------------------------------- """
                         ## PLOTS
     """ ----------------------------------------------- """
@@ -486,16 +586,33 @@ if __name__=='__main__':
     """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
     #             General                     #
     """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
-    
+
+    # General settings 
+    # SAVE plot? 1 = yes  //  0 = No
+    savefigure = 1
+    plt.rcParams.update({'font.size': 12})
+
     # ORDER OF PLOTS FROM TOP TO BOTTOM
-    displays = {'swaves':0, 'psp':1, 'lofar':2,'goes':3} 
+    instruments = ['wwaves','swaves','psp','lofar','goes']
+
+    displays = {}   # create dictionary for displaying instruments
+    # populates dictionary with instrument names
+    # this is useful for calling axarr later on
+    for i in range(0, len(instruments)):
+        displays[instruments[i]] = i
 
     # CONTROLS THE GLOBAL MARGINS LEFT AND RIGHT OF THE PLOTS
     leftmargin = 0.1
     rightmargin = 0.95
 
+    textmargin = 0.02
+
+
+
+
+
     # INITIALISING THE SUBPLOTS
-    f, axarr = plt.subplots(len(displays),1,gridspec_kw={'height_ratios': [1, 1, 1, 1]},figsize=(10,13)) 
+    f, axarr = plt.subplots(len(displays),1,gridspec_kw={'height_ratios': np.full((1, len(displays)), 1)[0]},figsize=(9,13)) 
     
     # THIS CONTROLS GLOBAL SUBPLOTS APPEARANCE DOING NOTHING NOW BECAUSE USING LOCAL SUBPLOTS
     # f.subplots_adjust(left=leftmargin, bottom=0.13, right=rightmargin, top=0.95, wspace=0.35, hspace=0.26)
@@ -504,21 +621,76 @@ if __name__=='__main__':
     # OBJECTS FOR SUBPLOTS 
     # object 1 for goes alone
     gs1 = gs.GridSpec(nrows = 1, ncols = 1)
-    gs1.update(left=leftmargin, right=rightmargin,top = 0.2 , bottom = 0.1,  hspace=0.0)
+    gs1.update(left= leftmargin, right=rightmargin,top = 0.20 , bottom = 0.05,  hspace=0.0)
 
     # object 2 for psp and lofar 
     gs2 = gs.GridSpec(nrows = 3, ncols = 1)
-    gs2.update(left=leftmargin, right=rightmargin,top = 0.60 , bottom = 0.25,  hspace=0.0)
+    gs2.update(left=leftmargin, right=rightmargin,top = 0.49 , bottom = 0.25,  hspace=0.0)
 
 
     # object 3 for swaves
     gs3 = gs.GridSpec(nrows = 1, ncols = 1)
-    gs3.update(left=leftmargin, right=rightmargin,top = 0.93 , bottom = 0.65,  hspace=0.0)
+    gs3.update(left=leftmargin, right=rightmargin,top = 0.72 , bottom = 0.54,  hspace=0.0)
+
+    # object 4 for wwaves
+    gs4 = gs.GridSpec(nrows = 1, ncols = 1)
+    gs4.update(left=leftmargin, right=rightmargin,top = 0.98 , bottom = 0.77,  hspace=0.0)
 
 
 
+    colormap = 'plasma'
 
-    colormap = 'inferno'
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+    #         Wind WAVES                          #
+    """ iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii """
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """         LEVELS             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    v_min_wwaves = np.percentile(data_w,50)
+    v_max_wwaves = np.percentile(data_w,96)
+
+
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       Plotting             """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    axarr[displays['wwaves']] = plt.subplot(gs4[0, 0:3])
+    plt.pcolormesh(dates.date2num(epoch_w), freqs_w/1E3, data_w.T,
+        vmin=v_min_wwaves, vmax=v_max_wwaves,
+        cmap = colormap)
+
+
+    # TITLE 
+    axarr[displays['wwaves']].text(textmargin, 0.9,'Wind WAVES',
+        horizontalalignment='left',
+        fontsize = 'large',
+        color = 'w',
+        fontweight = 'bold',
+        transform=axarr[displays['wwaves']].transAxes)
+    axarr[displays['wwaves']].text(rightmargin - textmargin, 0.8,'(a)',
+        horizontalalignment='left',
+        fontsize = 'large',
+        color = 'w',
+        fontweight = 'bold',
+        transform=axarr[displays['wwaves']].transAxes)
+    axarr[displays['wwaves']].set_yscale('log')
+    axarr[displays['wwaves']].invert_yaxis()
+
+    axarr[displays['wwaves']].set_ylabel("Frequency [MHz] ")
+    axarr[displays['wwaves']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
+
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """      time axis labels      """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    axarr[displays['wwaves']].xaxis_date()
+    axarr[displays['wwaves']].xaxis.set_major_locator(dates.MinuteLocator(interval=5))
+    axarr[displays['wwaves']].xaxis.set_minor_locator(dates.SecondLocator(interval=60))
+    axarr[displays['wwaves']].xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
+        
+
+
 
 
 
@@ -545,8 +717,15 @@ if __name__=='__main__':
     axarr[displays['swaves']].set_ylabel("Frequency [MHz] ")
 
     # TITLE
-    axarr[displays['swaves']].text(.1,.9,'S/WAVES',
-        horizontalalignment='center',
+    axarr[displays['swaves']].text(textmargin,.9,'S/WAVES',
+        horizontalalignment='left',
+        fontsize = 'large',
+        color = 'w',
+        fontweight = 'bold',
+        transform=axarr[displays['swaves']].transAxes)
+    
+    axarr[displays['swaves']].text(rightmargin - textmargin, 0.8,'(b)',
+        horizontalalignment='left',
         fontsize = 'large',
         color = 'w',
         fontweight = 'bold',
@@ -618,17 +797,24 @@ if __name__=='__main__':
     axarr[displays['psp']].set_ylabel("Frequency [MHz] ")
 
     # TITLE
-    axarr[displays['psp']].text(.1,.9,'PSP/FIELDS',
-        horizontalalignment='center',
+    axarr[displays['psp']].text(textmargin,.9,'PSP/FIELDS',
+        horizontalalignment='left',
         fontsize = 'large',
         color = 'w',
         fontweight = 'bold',
         transform=axarr[displays['psp']].transAxes)
 
     # Additional info
-    axarr[displays['psp']].text(.1,.1,f"TIME Shifted {psp_delay:0.02f}s",
-        horizontalalignment='center',
+    axarr[displays['psp']].text(textmargin,.8,f"T+{psp_delay:0.02f}s",
+        horizontalalignment='left',
         fontsize = 'small',
+        color = 'w',
+        fontweight = 'bold',
+        transform=axarr[displays['psp']].transAxes)
+
+    axarr[displays['psp']].text(rightmargin - textmargin, 0.8,'(c)',
+        horizontalalignment='left',
+        fontsize = 'large',
         color = 'w',
         fontweight = 'bold',
         transform=axarr[displays['psp']].transAxes)
@@ -656,12 +842,22 @@ if __name__=='__main__':
             cmap = colormap) 
 
     # TITLE 
-    axarr[displays['lofar']].text(.1,.8,'LOFAR',
-        horizontalalignment='center',
+    axarr[displays['lofar']].text(textmargin,.8,'LOFAR',
+        horizontalalignment='left',
         fontsize = 'large',
         color = 'w',
         fontweight = 'bold',
         transform=axarr[displays['lofar']].transAxes)
+
+    axarr[displays['lofar']].text(rightmargin-textmargin,.8,'(d)',
+        horizontalalignment='left',
+        fontsize = 'large',
+        color = 'w',
+        fontweight = 'bold',
+        transform=axarr[displays['lofar']].transAxes)
+
+
+
     # PLOT SETTINGS
     axarr[displays['lofar']].set_yscale('log')
     axarr[displays['lofar']].set_ylim((1E2,2E1))
@@ -694,13 +890,49 @@ if __name__=='__main__':
     axarr[displays['goes']].set_ylabel('Watts $m^{-2}$')
     axarr[displays['goes']].set_yscale('log')
     axarr[displays['goes']].set_ylim((goes_y_min,goes_y_max))
+    axarr[displays['goes']].set_xlim((goes_t0,goes_t1))
     axarr[displays['goes']].plot(xrsb_data,'r-',label = r'GOES 1.0 -- 8.0 $\AA$')
     axarr[displays['goes']].plot(xrsa_data,'b-',label = r'GOES 0.5 -- 4.0 $\AA$')
-    axarr[displays['goes']].xaxis.set_major_formatter(dates.DateFormatter("%H-%M"))
+ 
     axarr[displays['goes']].legend(loc='upper left')
     axarr[displays['goes']].axvline(x=t0, color='r', linestyle='--')
     axarr[displays['goes']].axvline(x=t1, color='r', linestyle='--')
+
+    axarr[displays['goes']].grid(axis = 'y')
+
+
+
+    ax_right_goes = axarr[displays['goes']].twinx()
+    ax_right_goes.set_ylim((goes_y_min,goes_y_max))
+    ax_right_goes.plot(xrsb_data,'r-')
+    ax_right_goes.plot(xrsa_data,'b-')
+    ax_right_goes.set_yscale('log')
+    ax_right_goes.set_yticks([1E-8,1E-7,1E-6,1E-5])
+    ax_right_goes.tick_params(axis='both', which='both', length=0)
+    ax_right_goes.set_yticklabels(['A','B','C','M'])
+    
+
+    axarr[displays['goes']].xaxis.set_major_locator(dates.HourLocator(interval=1))
+    axarr[displays['goes']].xaxis.set_minor_locator(dates.MinuteLocator(interval=15))
+    axarr[displays['goes']].xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
     axarr[displays['goes']].set_xlabel(f"TIME / {year}  -  {month}  -  {day}")
+
+
+
+
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+    """       LINES                """
+    # iiiiiiiiiiiiiiiiiiiiiiiiiiiiii #
+
+    l1 = lines.Line2D([0.61, rightmargin], [0.2, 0.25], transform=f.transFigure, figure=f, color='r',linestyle='--')
+    l2 = lines.Line2D([0.53, leftmargin], [0.2, 0.25], transform=f.transFigure, figure=f, color='r',linestyle='--')
+    f.lines.extend([l1, l2])
+
+
+
+
+    if savefigure == 1:
+        f.savefig('PSP_LOFAR_WAVES', dpi=300, format='png')
 
 
     plt.show()
